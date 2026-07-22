@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Zehen — Quiz Game</title>
+<style>
+  :root{
+    --bg-deep: #0d1b2e;
+    --bg-panel: #142944;
+    --gold: #e8b84b;
+    --gold-dim: #a9843a;
+    --cream: #f3ead8;
+    --correct: #4caf7d;
+    --wrong: #d9614f;
+    --font-display: 'Georgia', 'Times New Roman', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-deep);
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(232,184,75,0.10), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    font-family: var(--font-body);
+    color: var(--cream);
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 16px 28px;
+  }
+
+  /* ---------- Header ---------- */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .brand {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    color: var(--gold);
+  }
+  .brand span { color: var(--cream); font-weight: 400; font-size: 13px; display:block; letter-spacing: 1px; opacity:0.6; }
+  .score-pill {
+    background: var(--bg-panel);
+    border: 1px solid rgba(232,184,75,0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  /* ---------- Progress dots ---------- */
+  .progress {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+  .dot {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.12);
+    overflow: hidden;
+  }
+  .dot.filled { background: var(--gold); }
+  .dot.current { background: rgba(232,184,75,0.35); }
+
+  /* ---------- Screens ---------- */
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* Start screen */
+  #start-screen { justify-content: center; align-items: center; text-align: center; gap: 22px; }
+  .spotlight {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,184,75,0.35), rgba(232,184,75,0.02) 70%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px;
+  }
+  h1.title {
+    font-family: var(--font-display);
+    font-size: 30px;
+    color: var(--gold);
+    line-height: 1.3;
+  }
+  p.subtitle { opacity: 0.65; font-size: 15px; max-width: 300px; }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+  .cat-btn {
+    background: var(--bg-panel);
+    border: 1px solid rgba(232,184,75,0.25);
+    color: var(--cream);
+    padding: 14px 8px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .cat-btn:active { transform: scale(0.96); border-color: var(--gold); }
+
+  .primary-btn {
+    background: var(--gold);
+    color: var(--bg-deep);
+    border: none;
+    padding: 15px 40px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: transform 0.15s ease;
+  }
+  .primary-btn:active { transform: scale(0.96); }
+  .primary-btn:disabled { opacity: 0.4; }
+
+  /* Quiz screen */
+  #quiz-screen { flex: 1; }
+  .timer-track {
+    height: 5px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    background: var(--gold);
+    width: 100%;
+    transition: width 1s linear, background 0.3s ease;
+  }
+  .q-eyebrow {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 10px;
+  }
+  .question-card {
+    background: var(--bg-panel);
+    border: 1px solid rgba(232,184,75,0.18);
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 22px;
+  }
+  .question-text {
+    font-family: var(--font-display);
+    font-size: 20px;
+    line-height: 1.5;
+    color: var(--cream);
+  }
+  .options { display: flex; flex-direction: column; gap: 12px; }
+  .option-btn {
+    background: var(--bg-panel);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    color: var(--cream);
+    padding: 15px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    text-align: right;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .option-btn:active { transform: scale(0.98); }
+  .option-btn.correct { border-color: var(--correct); background: rgba(76,175,125,0.15); }
+  .option-btn.wrong { border-color: var(--wrong); background: rgba(217,97,79,0.15); }
+  .option-btn.disabled { pointer-events: none; }
+  .option-letter {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+
+  /* Result screen */
+  #result-screen { justify-content: center; align-items: center; text-align: center; gap: 16px; }
+  .result-score {
+    font-family: var(--font-display);
+    font-size: 54px;
+    color: var(--gold);
+  }
+  .result-label { opacity: 0.7; font-size: 15px; }
+  .result-msg { font-size: 16px; max-width: 280px; margin-top: 4px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand">Zehen<span>QUIZ SHOW</span></div>
+    <div class="score-pill" id="score-pill">Score: 0</div>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen active" id="start-screen">
+    <div class="spotlight">🧠</div>
+    <h1 class="title">Kitna Zehen<br>Rakhte Ho?</h1>
+    <p class="subtitle">Category chuno aur apna zehen aazmao. Har sawal ke liye 15 second milenge.</p>
+    <div class="category-grid" id="category-grid"></div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="screen" id="quiz-screen">
+    <div class="progress" id="progress-dots"></div>
+    <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="q-eyebrow" id="q-eyebrow">Sawal 1 / 8</div>
+    <div class="question-card">
+      <div class="question-text" id="question-text"></div>
+    </div>
+    <div class="options" id="options-container"></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="result-screen">
+    <div class="q-eyebrow">FINAL SCORE</div>
+    <div class="result-score" id="final-score">0/8</div>
+    <div class="result-label" id="result-label"></div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="primary-btn" id="restart-btn">Dobara Khelo</button>
+  </div>
+
+</div>
+
+<script>
+const QUESTION_BANK = {
+  "Pakistan": [
+    {q:"Pakistan ka sab se bara sheher kaun sa hai?", opts:["Karachi","Lahore","Islamabad","Faisalabad"], a:0},
+    {q:"Pakistan kab azad hua?", opts:["1945","1946","1947","1948"], a:2},
+    {q:"Pakistan ka qaumi parinda (bird) kya hai?", opts:["Mor","Chakor","Uqaab","Kabootar"], a:1},
+    {q:"Pakistan ka sab se lamba darya kaun sa hai?", opts:["Chenab","Ravi","Sindh (Indus)","Jhelum"], a:2},
+    {q:"K2 pahar Pakistan ke kis ilaqe mein hai?", opts:["Sindh","Gilgit-Baltistan","Balochistan","Punjab"], a:1},
+    {q:"Pakistan ki qaumi zaban kya hai?", opts:["Punjabi","Sindhi","Urdu","Pashto"], a:2},
+    {q:"Minar-e-Pakistan kis sheher mein hai?", opts:["Lahore","Multan","Peshawar","Quetta"], a:0},
+    {q:"Pakistan ka sab se pehla sadar (president) kaun tha?", opts:["Ayub Khan","Iskander Mirza","Yahya Khan","Zulfiqar Ali Bhutto"], a:1}
+  ],
+  "Science": [
+    {q:"Pani ka chemical formula kya hai?", opts:["CO2","H2O","O2","NaCl"], a:1},
+    {q:"Insaan ke jism mein kitni haddiyan hoti hain?", opts:["186","206","226","246"], a:1},
+    {q:"Sooraj se zameen ka number kaunsa hai (order mein)?", opts:["Teesra","Chautha","Doosra","Pehla"], a:0},
+    {q:"Bijli ka wahid (unit) kya hai?", opts:["Watt","Volt","Ampere","Ohm"], a:1},
+    {q:"Sab se halka gas kaun sa hai?", opts:["Oxygen","Nitrogen","Hydrogen","Helium"], a:2},
+    {q:"Dil (heart) ke kitne chambers hote hain?", opts:["2","3","4","5"], a:2},
+    {q:"Roshni ki raftar kitni hai (takreeban)?", opts:["3 lakh km/s","1 lakh km/s","5 lakh km/s","10 lakh km/s"], a:0},
+    {q:"Photosynthesis kis cheez mein hoti hai?", opts:["Jaanwar","Paudhay","Pathar","Pani"], a:1}
+  ],
+  "Sports": [
+    {q:"Cricket World Cup 1992 kisne jeeta?", opts:["India","Australia","Pakistan","England"], a:2},
+    {q:"Football match kitne players khelte hain (ek team)?", opts:["9","10","11","12"], a:2},
+    {q:"Olympics kitne saal baad hote hain?", opts:["2","4","6","8"], a:1},
+    {q:"Pakistan ka qaumi khel kya hai?", opts:["Cricket","Hockey","Football","Squash"], a:1},
+    {q:"Ek cricket over mein kitni balls hoti hain?", opts:["4","5","6","8"], a:2},
+    {q:"Tennis mein zero score ko kya kehte hain?", opts:["Love","Ace","Deuce","Set"], a:0},
+    {q:"FIFA World Cup 2022 kahan hua?", opts:["Russia","Brazil","Qatar","Qatar"], a:2},
+    {q:"Basketball mein ek team mein kitne players hote hain (court par)?", opts:["4","5","6","7"], a:1}
+  ],
+  "General": [
+    {q:"Dunya ka sab se bara sehra kaun sa hai?", opts:["Sahara","Gobi","Thar","Kalahari"], a:0},
+    {q:"Taj Mahal kahan waqe hai?", opts:["Pakistan","India","Bangladesh","Nepal"], a:1},
+    {q:"Ek hafte mein kitne din hote hain?", opts:["5","6","7","8"], a:2},
+    {q:"Dunya ka sab se chota mulk kaun sa hai?", opts:["Monaco","Vatican City","Malta","Liechtenstein"], a:1},
+    {q:"Insaan ki aankhon ka rang kis cheez se tay hota hai?", opts:["Melanin","Calcium","Iron","Protein"], a:0},
+    {q:"Dunya mein kitne mahad'in (continents) hain?", opts:["5","6","7","8"], a:2},
+    {q:"Eiffel Tower kahan hai?", opts:["London","Paris","Rome","Berlin"], a:1},
+    {q:"Chand zameen ka kya hai?", opts:["Sitara","Sayyara","Chaand (satellite)","Comet"], a:2}
+  ]
+};
+
+let currentCategory = "";
+let questions = [];
+let currentIndex = 0;
+let score = 0;
+let timer = null;
+let timeLeft = 15;
+const TIME_LIMIT = 15;
+
+const startScreen = document.getElementById('start-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const resultScreen = document.getElementById('result-screen');
+const categoryGrid = document.getElementById('category-grid');
+const scorePill = document.getElementById('score-pill');
+const progressDots = document.getElementById('progress-dots');
+const timerFill = document.getElementById('timer-fill');
+const qEyebrow = document.getElementById('q-eyebrow');
+const questionText = document.getElementById('question-text');
+const optionsContainer = document.getElementById('options-container');
+const finalScore = document.getElementById('final-score');
+const resultLabel = document.getElementById('result-label');
+const resultMsg = document.getElementById('result-msg');
+const restartBtn = document.getElementById('restart-btn');
+
+function buildCategoryButtons() {
+  categoryGrid.innerHTML = '';
+  Object.keys(QUESTION_BANK).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.textContent = cat;
+    btn.onclick = () => startQuiz(cat);
+    categoryGrid.appendChild(btn);
+  });
+}
+
+function showScreen(el) {
+  [startScreen, quizScreen, resultScreen].forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function startQuiz(cat) {
+  currentCategory = cat;
+  questions = [...QUESTION_BANK[cat]];
+  currentIndex = 0;
+  score = 0;
+  updateScorePill();
+  showScreen(quizScreen);
+  buildProgressDots();
+  loadQuestion();
+}
+
+function updateScorePill() {
+  scorePill.textContent = `Score: ${score}`;
+}
+
+function buildProgressDots() {
+  progressDots.innerHTML = '';
+  questions.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    progressDots.appendChild(d);
+  });
+}
+
+function refreshDots() {
+  const dots = progressDots.children;
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].classList.remove('filled', 'current');
+    if (i < currentIndex) dots[i].classList.add('filled');
+    else if (i === currentIndex) dots[i].classList.add('current');
+  }
+}
+
+function loadQuestion() {
+  refreshDots();
+  const q = questions[currentIndex];
+  qEyebrow.textContent = `Sawal ${currentIndex + 1} / ${questions.length} — ${currentCategory}`;
+  questionText.textContent = q.q;
+  optionsContainer.innerHTML = '';
+  const letters = ['الف', 'ب', 'ج', 'د'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span>${opt}</span><span class="option-letter">${letters[i]}</span>`;
+    btn.onclick = () => selectAnswer(i, btn);
+    optionsContainer.appendChild(btn);
+  });
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timeLeft = TIME_LIMIT;
+  timerFill.style.width = '100%';
+  timerFill.style.background = 'var(--gold)';
+  timer = setInterval(() => {
+    timeLeft -= 1;
+    const pct = (timeLeft / TIME_LIMIT) * 100;
+    timerFill.style.width = pct + '%';
+    if (timeLeft <= 5) timerFill.style.background = 'var(--wrong)';
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      selectAnswer(-1, null);
+    }
+  }, 1000);
+}
+
+function selectAnswer(chosenIndex, btnEl) {
+  clearInterval(timer);
+  const q = questions[currentIndex];
+  const buttons = optionsContainer.querySelectorAll('.option-btn');
+  buttons.forEach(b => b.classList.add('disabled'));
+
+  buttons[q.a].classList.add('correct');
+  if (chosenIndex !== q.a && chosenIndex !== -1 && btnEl) {
+    btnEl.classList.add('wrong');
+  }
+  if (chosenIndex === q.a) {
+    score += 1;
+    updateScorePill();
+  }
+
+  setTimeout(() => {
+    currentIndex += 1;
+    if (currentIndex < questions.length) {
+      loadQuestion();
+    } else {
+      showResult();
+    }
+  }, 1100);
+}
+
+function showResult() {
+  showScreen(resultScreen);
+  finalScore.textContent = `${score}/${questions.length}`;
+  resultLabel.textContent = currentCategory + " Category";
+  let msg = "";
+  const pct = score / questions.length;
+  if (pct === 1) msg = "Mashallah! Sab sawalon ka jawab sahi tha — full marks!";
+  else if (pct >= 0.75) msg = "Zabardast! Bohot acha zehen hai aapka.";
+  else if (pct >= 0.5) msg = "Achi koshish! Thora aur practice karo, aur behtar hoga.";
+  else msg = "Koi baat nahi, dobara try karo — practice se sab better hota hai.";
+  resultMsg.textContent = msg;
+}
+
+restartBtn.onclick = () => {
+  showScreen(startScreen);
+  scorePill.textContent = 'Score: 0';
+};
+
+buildCategoryButtons();
+</script>
+</body>
+</html>
